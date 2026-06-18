@@ -40,7 +40,7 @@ return [
 		    [
 			    'id' => 'path', // configkey
 			    'title' => 'Dump path', // name or label
-			    'description' => 'File where users table will dumped to be fetched by someone.', // hint
+			    'description' => 'Path where users table dumps. Will create two files suffixed with \'_user_dump_sql.txt\' (sql) and \'_user_dump.txt\' (csv)', // hint
 			    'type' => DeclarativeSettingsTypes::TEXT,
 			    'placeholder' => '/home/user/safe_and_private_place/users_of_this_instance.sql', // input placeholder
 			    'default' => '',

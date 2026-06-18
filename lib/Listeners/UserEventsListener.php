@@ -156,19 +156,43 @@ class UserEventsListener implements IEventListener {
 
 			$url_to_ping = $this->appConfig->getAppValueString('url', '');
 			$dump_path = $this->appConfig->getAppValueString('path', '');
-			error_log($url_to_ping . " / ". $dump_path);
+      /** PING **/
 			$client = $this->clientService->newClient();
 			$response = $client->get($url_to_ping);
 
 			$qb = $this->db->getQueryBuilder();
 
-			// if needed sql:
-                        //$createTableSQL = $qb->query("SHOW CREATE TABLE $tableName")->fetchColumn();
-			//$insertSQL = "INSERT INTO $tableName VALUES ";
-			//foreach ($rows as $row) {$valuesArray[] = "('" . implode("','", array_map('addslashes', $row)) . "')";}
-			//$sqlDump = $createTableSQL . ";\n" . $insertSQL;
-			//
+			/** SQL FILE **/
+			$table_name = $qb->prefixTableName('*PREFIX*users');
+			$connection = \OC::$server->getDatabaseConnection();
+
 			
+			$file = fopen($dump_path . "_user_dump_sql.txt", 'w');
+			// Prepare the SQL query
+			$sql = "SHOW CREATE TABLE " . $table_name;
+			$result = $connection->executeQuery($sql);
+			$createTableStatement = $result->fetchAssociative();
+			fwrite($file, $createTableStatement['Create Table'] . ';' . PHP_EOL);
+			fwrite($file, "INSERT INTO " . $createTableStatement['Table'] . " VALUES" . PHP_EOL);
+
+			$qb->select('*')->from('users');
+			$result = $qb->executeQuery();
+
+			// `uid`, displayname, password, uid_lower
+			$values = [];
+			while ($row = $result->fetchAssociative()) {
+				// Convert the associative array to a string
+				$values[] = "('" . implode("','", array_map('addslashes', $row)) . "')";
+			}
+			$sql_values = implode("," . PHP_EOL , $values);
+		        fwrite($file, $sql_values . ";" . PHP_EOL . PHP_EOL);
+
+			fwrite($file, "/* EVENT: " . $event . '*/;' . PHP_EOL);
+			fwrite($file, "/* DATETIME: " . time() . '*/;' . PHP_EOL);
+
+			fclose($file);
+
+			/* CSV FILE: */
 			$qb->select('*')->from('users');
 			$result = $qb->executeQuery();
 
