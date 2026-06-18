@@ -1,0 +1,196 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * SPDX-FileCopyrightText: 2026 Communia SCCL and Nextcloud contributors
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
+namespace OCA\UserWatch\Listeners;
+
+use OCP\AppFramework\Services\IAppConfig;
+use OCP\Http\Client\IClientService;
+use OCP\IConfig;
+use OCP\IDBConnection;
+use OCP\EventDispatcher\Event;
+use OCP\EventDispatcher\IEventListener;
+use OCP\User\Events\PasswordUpdatedEvent;
+use OCP\User\Events\UserChangedEvent;
+use OCP\User\Events\UserCreatedEvent;
+use OCP\User\Events\UserDeletedEvent;
+use OCP\User\Events\UserIdAssignedEvent;
+use OCP\User\Events\UserIdUnassignedEvent;
+use Psr\Log\LoggerInterface;
+
+/**
+ * @template-implements IEventListener<UserCreatedEvent|UserDeletedEvent|UserChangedEvent|PasswordUpdatedEvent|UserIdAssignedEvent|UserIdUnassignedEvent>
+ */
+class UserEventsListener implements IEventListener {
+	public function __construct(
+		private LoggerInterface $logger,
+		private readonly IAppConfig $appConfig,
+		private readonly IConfig $config,
+		private IClientService $clientService,
+		private IDBConnection $db
+	) {
+	}
+
+	#[\Override]
+	public function handle(Event $event): void {
+		if ($event instanceof UserCreatedEvent) {
+			$this->userCreated($event);
+		} elseif ($event instanceof UserDeletedEvent) {
+			$this->userDeleted($event);
+		} elseif ($event instanceof UserChangedEvent) {
+			$this->userChanged($event);
+		} elseif ($event instanceof PasswordUpdatedEvent) {
+			$this->passwordUpdated($event);
+		} elseif ($event instanceof UserIdAssignedEvent) {
+			$this->userIdAssigned($event);
+		} elseif ($event instanceof UserIdUnassignedEvent) {
+			$this->userIdUnassigned($event);
+		}
+	}
+
+	private function userCreated(UserCreatedEvent $event): void {
+		$this->dumpUsers('USERCREATED:' . $event->getUID());
+		$this->log(
+			'User created: "%s"',
+			[
+				'uid' => $event->getUid()
+			],
+			[
+				'uid',
+			]
+		);
+	}
+
+	private function userDeleted(UserDeletedEvent $event): void {
+		$this->dumpUsers('USER_DELETED:' . $event->getUser()->getUID());
+		$this->log(
+			'User deleted: "%s"',
+			[
+				'uid' => $event->getUser()->getUID()
+			],
+			[
+				'uid',
+			]
+		);
+	}
+
+	private function userChanged(UserChangedEvent $event): void {
+		switch ($event->getFeature()) {
+			case 'enabled':
+			        $this->dumpUsers('USER_ENABLED:' . $event->getUser()->getUID());
+				$this->log(
+					$event->getValue() === true
+						? 'User enabled: "%s"'
+						: 'User disabled: "%s"',
+					['user' => $event->getUser()->getUID()],
+					[
+						'user',
+					]
+				);
+				break;
+			case 'eMailAddress':
+				$this->log(
+					'Email address changed for user %s',
+					['user' => $event->getUser()->getUID()],
+					[
+						'user',
+					]
+				);
+				break;
+		}
+	}
+
+	private function passwordUpdated(PasswordUpdatedEvent $event): void {
+		if ($event->getUser()->getBackendClassName() === 'Database') {
+			$this->dumpUsers('PASSWORD_UPDATED:' . $event->getUser()->getUID());
+
+			$this->log(
+				'DD! Password of user "%s" has been changed',
+				[
+					'user' => $event->getUser()->getUID(),
+				],
+				[
+					'user',
+				]
+			);
+		}
+	}
+
+	/**
+	 * Log assignments of users (typically user backends)
+	 */
+	private function userIdAssigned(UserIdAssignedEvent $event): void {
+		$this->log(
+			'UserID assigned: "%s"',
+			[ 'uid' => $event->getUserId() ],
+			[ 'uid' ]
+		);
+	}
+
+	/**
+	 * Log unassignments of users (typically user backends, no data removed)
+	 */
+	private function userIdUnassigned(UserIdUnassignedEvent $event): void {
+		$this->log(
+			'UserID unassigned: "%s"',
+			[ 'uid' => $event->getUserId() ],
+			[ 'uid' ]
+		);
+	}
+
+	/**
+	 * Dumps the users table to file set in settings.
+	 */ 
+	private function dumpUsers($event): void {
+		//$do_ping = $this->appConfig->getValueBool('user_watch', 'do_ping', true);
+		// remove when do_ping is active in settings form (pending https://github.com/nextcloud/server/issues/60903).
+		$do_ping = !empty($this->appConfig->getAppValueString('path', ''));
+		if ($do_ping) {
+
+
+
+			$url_to_ping = $this->appConfig->getAppValueString('url', '');
+			$dump_path = $this->appConfig->getAppValueString('path', '');
+			error_log($url_to_ping . " / ". $dump_path);
+			$client = $this->clientService->newClient();
+			$response = $client->get($url_to_ping);
+
+			$qb = $this->db->getQueryBuilder();
+
+			// if needed sql:
+                        //$createTableSQL = $qb->query("SHOW CREATE TABLE $tableName")->fetchColumn();
+			//$insertSQL = "INSERT INTO $tableName VALUES ";
+			//foreach ($rows as $row) {$valuesArray[] = "('" . implode("','", array_map('addslashes', $row)) . "')";}
+			//$sqlDump = $createTableSQL . ";\n" . $insertSQL;
+			//
+			
+			$qb->select('*')->from('users');
+			$result = $qb->executeQuery();
+
+			$file = fopen($dump_path . "_user_dump.txt", 'w');
+
+			// `uid`, displayname, password, uid_lower
+			while ($row = $result->fetchAssociative()) {
+				// Convert the associative array to a string
+				$line = implode(", ", $row) . PHP_EOL;
+				fwrite($file, $line);
+			}
+			fwrite($file, "/* EVENT: " . $event . '*/;' . PHP_EOL);
+			fwrite($file, "/* DATETIME: " . time() . '*/;' . PHP_EOL);
+
+			fclose($file);
+			$this->log('DD! Dump of users done!');
+			
+		}
+
+	}
+
+	public function log($message, array $context = []): void {
+		$this->logger->log('notice', $message, $context);
+	}
+}

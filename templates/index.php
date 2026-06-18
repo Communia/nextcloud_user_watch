@@ -9,4 +9,4 @@ Util::addStyle(OCA\UserWatch\AppInfo\Application::APP_ID, OCA\UserWatch\AppInfo\
 
 ?>
 
-<div id="userwatch"></div>
+<div id="user_watch"></div>

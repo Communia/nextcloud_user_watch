@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <info xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	  xsi:noNamespaceSchemaLocation="https://apps.nextcloud.com/schema/apps/info.xsd">
-	<id>userwatch</id>
+	<id>user_watch</id>
 	<name>User Watch</name>
 	<summary>Watches changes on users to notify somewhere</summary>
 	<description>Watches changes on users to notify somewhere . to be completed</description>
@@ -16,9 +16,9 @@
 	</dependencies>
 	<navigations>
 		<navigation>
-			<id>userwatch</id>
+			<id>user_watch</id>
 			<name>User Watch</name>
-			<route>userwatch.page.index</route>
+			<route>user_watch.page.index</route>
 			<icon>app.svg</icon>
 			<type>link</type>
 		</navigation>

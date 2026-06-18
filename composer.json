@@ -1,5 +1,5 @@
 {
-	"name": "nextcloud/userwatch",
+	"name": "nextcloud/user_watch",
 	"description": "Watches changes on users to notify somewhere . to be completed",
 	"license": "AGPL-3.0-or-later",
 	"authors": [

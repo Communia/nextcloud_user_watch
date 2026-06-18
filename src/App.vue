@@ -4,7 +4,7 @@ import NcContent from '@nextcloud/vue/components/NcContent'
 </script>
 
 <template>
-	<NcContent app-name="userwatch">
+	<NcContent app-name="user_watch">
 		<NcAppContent :class="$style.content">
 			<h2>Hello world!</h2>
 		</NcAppContent>
