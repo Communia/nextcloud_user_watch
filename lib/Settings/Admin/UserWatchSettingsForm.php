@@ -21,11 +21,27 @@ return [
 	    'doc_url' => '', // NcSettingsSection doc_url for documentation or help page, empty string if not needed
 	    'fields' => [
 		    [
-			    'id' => 'url', // configkey
-			    'title' => 'Url', // name or label
-			    'description' => 'Url where to send an http request from this server, whatch for this to react.', // hint
+			    'id' => 'on_password_updated_url', // configkey
+			    'title' => 'Url to request on user password update', // name or label
+			    'description' => 'Url where to send an http request from this server when updating passwords, whatch for this to react. Place {uid} in this url that wil lbe replaced with deleted uid', // hint
+			    'type' => DeclarativeSettingsTypes::URL,
+			    'placeholder' => 'https://yourexample/{uid}?token=arbitrary_to_be_sure', // input placeholder
+			    'default' => '',
+		    ],
+		    [
+			    'id' => 'on_created_url', // configkey
+			    'title' => 'Url to request on user created', // name or label
+			    'description' => 'Url where to send an http request from this server when creating user, whatch for this to react.', // hint
 			    'type' => DeclarativeSettingsTypes::URL,
 			    'placeholder' => 'https://yourexample/some?token=arbitrary_to_be_sure', // input placeholder
+			    'default' => '',
+		    ],
+		    [
+			    'id' => 'on_deleted_url', // configkey
+			    'title' => 'Url to request on user deleted', // name or label
+			    'description' => 'Url where to send an http request from this server when deleting user, whatch for this to react. Place {uid} in this url that wil lbe replaced with deleted uid', // hint
+			    'type' => DeclarativeSettingsTypes::URL,
+			    'placeholder' => 'https://yourexample/{uid}?token=arbitrary_to_be_sure', // input placeholder
 			    'default' => '',
 		    ],
 		   /*[
